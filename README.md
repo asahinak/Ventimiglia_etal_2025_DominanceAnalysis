@@ -2,11 +2,12 @@ README: Dominance Classification
 
 Overview
 These MATLAB scripts classify pairwise dominance behavior from FlymatAll and FlyFeatures variables created following FlyTracker output. For each experimental condition, run the analysis in this order:
-1	Facing-angle analysis
-2	Lunge analysis
-3	Cross-metric classifier that integrates the facing-angle and lunge classifications
+1.	Facing-angle analysis
+2.	Lunge analysis
+3.	Cross-metric classifier that integrates the facing-angle and lunge classifications
+4.	
 The scripts provide a reproducible framework to assist with classification; they are not intended to replace experimenter review. Disagreements between classifiers are flagged for inspection, and may require a final manual adjustment when the selected classification window does not represent the broader behavior of the pair.
-Requirements and inputs
+Requirements and inputs:
 •	MATLAB 2024 or newer
 •	Corrected fly identities in paired sequential order (pair ={a,b} ordered linearly in FlymatAll as {1,2}, {3,4}…).
 •	FlymatAll and FlyFeatures variables created from FlyTracker and JAABA lunge classification outputs.
