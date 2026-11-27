@@ -1,17 +1,23 @@
-%% --- Temporal Analysis of Dominance Based on Lunges with Pair Index ---
-% This section performs a pairwise temporal analysis of dominance based on lunging behavior.
-% It identifies the fly in each pair with the fewer lunges (low_lunger) and sums the number 
-% of lunges during specific time windows.
-%
-% Classification criteria:
-% 1. The low-lunger must have lunged fewer than 5 times in the last 10min of stimulation.
-% 2. The high-lunger (the other fly) must have lunged at least 1.5 times the number of lunges 
-%    done by the low-lunger across the last two timeWindow.
-%
-% If both conditions are met, the pair is classified as "Dominance Established."
-% If these conditions are not met, the pair is classified as "No Dominance."
+%% --- Dominance Classification based on Lunging behavior
+
+% 1-hour constant-stimulation protocol (75-min recording;
+% stimulation from recording minute 5 to minute 65).
+
+% Run this after FacingAngle Dominance Analysis.
 
 % FlymatAll and FlyFeatures should already be in the workspace
+
+% This section performs a pairwise  analysis of dominance based on lunging behavior.
+%
+% Classification criteria:
+% 1. The low-lunger must have lunged ≤5 times in the dominance window.
+% 2. The high-lunger must have lunged at least 1.5 times the number of lunges 
+%    done by the low-lunger in the dominance window.
+% If both conditions are met, the pair is classified as "Dominance Established."
+
+% “No Fighting”: both flies have zero lunges in the dominance window.
+% “Low Lunges”: unless “No Fighting” applies, the high-lunger has fewer than 5 lunges in the dominance window.
+% “No Dominance”: neither of those categories nor “Dominance Established” applies.
 
 % Ensure the number of flies is determined from the flymatAll structure
 numFlies = length(flymatAll); % Assuming each element corresponds to one fly
@@ -29,19 +35,19 @@ for i = 1:2:numFlies
         break; % Skip unpaired fly if odd number of flies
     end
     
-    % Define time window to count lunges for dominance determination time 324000
+    % Define time window to count lunges for dominance determination
     timeThreshold = 198000;
     timeWindow=[198000,234000]; % period for dominance determination, last 10min of stimulation. 
 
-    % Determine which fly in the pair lunged fewer times (low_lunger) after time 324000
-    fly1_L_startsm_afterThreshold = flymatAll(i).L_startsm(flymatAll(i).L_startsm >= timeThreshold);    % Lunge start times for fly1 after 324000
-    fly2_L_startsm_afterThreshold = flymatAll(i + 1).L_startsm(flymatAll(i + 1).L_startsm >= timeThreshold);  % Lunge start times for fly2 after 324000
+    % Determine which fly in the pair lunged fewer times (low_lunger) after time 
+    fly1_L_startsm_afterThreshold = flymatAll(i).L_startsm(flymatAll(i).L_startsm >= timeThreshold);    % Lunge start times for fly1  
+    fly2_L_startsm_afterThreshold = flymatAll(i + 1).L_startsm(flymatAll(i + 1).L_startsm >= timeThreshold);  % Lunge start times for fly2  
 
-    % Calculate the total lunges for each fly after 324000 (using L_startsm)
+    % Calculate the total lunges for each fly 
     fly1TotalLungesAfterThreshold = numel(fly1_L_startsm_afterThreshold);
     fly2TotalLungesAfterThreshold = numel(fly2_L_startsm_afterThreshold);
 
-    % Determine which fly lunged fewer times after 324000
+    % Determine which fly lunged fewer times 
     if fly1TotalLungesAfterThreshold < fly2TotalLungesAfterThreshold
         lowLungerIndex = i;    % Index of low lunger in flymatAll
         highLungerIndex = i+1; % Index of high lunger in flymatAll
@@ -65,29 +71,29 @@ for i = 1:2:numFlies
     LungeAnalysis(lowLungerIndex).timeWindow = zeros(size(timeWindow, 1), 1); % Preallocate array
     LungeAnalysis(highLungerIndex).timeWindow = zeros(size(timeWindow, 1), 1); % Preallocate array
     
-    % Loop through each pulse window and count lunges for both flies
+    % Look in each each dominance window and count lunges for both flies
     for j = 1:size(timeWindow, 1)
-        % Count lunges in the current pulse window for the low lunger
+        % Count lunges in the dominance window for the low lunger
         lowLungeCount = sum(lowLungerL_startsm >= timeWindow(j, 1) & lowLungerL_startsm <= timeWindow(j, 2));
         LungeAnalysis(lowLungerIndex).timeWindow(j) = lowLungeCount;
         
-        % Count lunges in the current pulse window for the high lunger
+        % Count lunges in the dominance window for the high lunger
         highLungeCount = sum(flymatAll(highLungerIndex).L_startsm >= timeWindow(j, 1) & flymatAll(highLungerIndex).L_startsm <= timeWindow(j, 2));
         LungeAnalysis(highLungerIndex).timeWindow(j) = highLungeCount;
     end
     
     % Classify the pair based on lunge behavior
-    lowLungerTimeWindow = LungeAnalysis(lowLungerIndex).timeWindow;  % Lunges in the last two timeWindow for low lunger
-    highLungerTimeWindow = LungeAnalysis(highLungerIndex).timeWindow;  % Lunges in the last two timeWindow for high lunger
+    lowLungerTimeWindow = LungeAnalysis(lowLungerIndex).timeWindow;  % Lunges in the the dominance window for low lunger
+    highLungerTimeWindow = LungeAnalysis(highLungerIndex).timeWindow;  % Lunges in the the dominance window for high lunger
     
-    % Check if both flies didn't lunge in the last two timeWindow (flag as "No Fighting")
+    % Check if both flies didn't lunge in the the dominance window (flag as "No Fighting")
     if sum(lowLungerTimeWindow) == 0 && sum(highLungerTimeWindow) == 0
         LungeAnalysis(lowLungerIndex).DominanceClassification = 'No Fighting';
         LungeAnalysis(highLungerIndex).DominanceClassification = 'No Fighting';
         LungeAnalysis(lowLungerIndex).PairClassification = 'No Fighting';
         LungeAnalysis(highLungerIndex).PairClassification = 'No Fighting';
     
-    % Mark as "Low Lunges" if lunge activity is very low for the high lunger
+    % Mark as "Low Lunges" if lunge activity if high-lunger <5
     elseif all(highLungerTimeWindow < 5)
         LungeAnalysis(lowLungerIndex).DominanceClassification = 'Low Lunges';
         LungeAnalysis(highLungerIndex).DominanceClassification = 'Low Lunges';

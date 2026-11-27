@@ -2,11 +2,15 @@
 % This compares facing angle and Lunge classifications and assigns an
 % updated classification based on their integration.
 
+% Mismatched classifications from facing-angle and lunging classifiers are
+% plotted. These should be manually inspected for final dominance call. 
+
 % Initialize a variable to track mismatches between the two analyses
 pairComparison = strings(numPairs, 1);  % Will store if the classifications agree or not
 
-% Define defeat analysis window.
-timeWindow=[198000,234000]; %last 10min of recording
+% Define the final 10 min of the 1-hour stimulation period
+% (recording minutes 55–65; stimulation runs from minutes 5–65).
+timeWindow = [198000, 234000];
 
 
 % Define bin edges to ensure consistent binning
@@ -50,8 +54,8 @@ for i = 1:2:numFlies
         fprintf('Mismatch for Fly Pair %d-%d\n', i, i + 1);
         
         % Extract the facing angle data (same as LungeAnalysis)
-        fly1Last_10min = FlyFeatures.FacingAngle(i,timeWindow);
-        fly2Last_10min = FlyFeatures.FacingAngle(i+1,timeWindow);
+        fly1Last_10min = FlyFeatures.FacingAngle(i,timeWindow(1):timeWindow(2));
+        fly2Last_10min = FlyFeatures.FacingAngle(i+1,timeWindow(1):timeWindow(2));
         
         % Generate histograms for both flies with the same bin edges
         [fly1Freq, ~] = histcounts(fly1Last_10min, 'BinEdges', binEdges);
@@ -62,55 +66,53 @@ for i = 1:2:numFlies
         totalLunges2 = numel(flymatAll(i + 1).L_startsm);
         
 
-        % % --- Create new figure for mismatch investigation ---
-        % figure;
-        % 
-        % % Plot the histogram of the facing angles for the mismatched pair (Last 10min data)
-        % subplot(3, 1, 1);  % Top subplot for facing angle histogram
-        % hold on;
-        % % Histogram for Fly 1
-        % histogram(fly1Last_10min, 'BinEdges', binEdges, 'FaceColor', 'b', 'FaceAlpha', 0.5);  
-        % % Histogram for Fly 2
-        % histogram(fly2Last_10min, 'BinEdges', binEdges, 'FaceColor', 'r', 'FaceAlpha', 0.5);  
-        % 
-        % % Calculate and plot medians
-        % meanFly1 = mean(fly1Last_10min);
-        % meanFly2 = mean(fly2Last_10min);
-        % 
-        % % Plot the mean lines
-        % plot([meanFly1, meanFly1], ylim, 'b--', 'LineWidth', 2);  % Median for Fly 1 (blue)
-        % plot([meanFly2, meanFly2], ylim, 'r--', 'LineWidth', 2);  % Median for Fly 2 (red)
-        % 
-        % % Add labels, title, and legend
-        % title(sprintf('Facing Angle Distribution for Fly %d vs Fly %d (Mismatch)', i, i + 1));
-        % xlabel('Facing Angle');
-        % ylabel('Frequency');
-        % legend(sprintf('Fly %d (Mean: %.2f)', i, meanFly1), sprintf('Fly %d (Mean: %.2f)', i + 1, meanFly2));
-        % hold off;
-        % 
-        % % Plot the lunge raster for the mismatched pair
-        % subplot(3, 1, 2);  % Middle subplot for lunge raster
-        % rasterplotter(flymatAll(i:i+1), 'lunge', '');  % Use the rasterplotter function
-        % title(sprintf('Lunge Raster for Fly %d vs Fly %d (Mismatch)', i, i + 1));
-        % 
-        % % Add the text with details below the raster plot
-        % subplot(3, 1, 3);  % Bottom subplot for information
-        % axis off;  % Turn off axis
-        % 
-        % % Create the text content for display
-        % infoText = sprintf(['Facing Angle Classification: Fly %d: %s, Fly %d: %s\n', ...
-        %                     'Mean Facing Angles: Fly %d: %.2f, Fly %d: %.2f\n', ...
-        %                     'Lunge-Based Dominance: %s\n', ...
-        %                     'Total Lunges: Fly %d: %d, Fly %d: %d\n', ...
-        %                     'Fly 1 (Fly %d) Lunges: %s\n', ...
-        %                     'Fly 2 (Fly %d) Lunges: %s'], ...
-        %                     i, facingAngleClass1, i + 1, facingAngleClass2, ...
-        %                     i, meanFly1, i + 1, meanFly2, ...
-        %                     lungeClass, ...
-        %                     i, totalLunges1, i + 1, totalLunges2);
-        % 
-        % % Display the text information in the figure
-        % text(0.5, 0.5, infoText, 'Units', 'normalized', 'HorizontalAlignment', 'center', 'FontSize', 10);
+        % --- Create new figure for mismatch investigation ---
+        figure;
+
+        % Plot the histogram of the facing angles for the mismatched pair (During dominance window)
+        subplot(3, 1, 1);  % Top subplot for facing angle histogram
+        hold on;
+        % Histogram for Fly 1
+        histogram(fly1Last_10min, 'BinEdges', binEdges, 'FaceColor', 'b', 'FaceAlpha', 0.5);  
+        % Histogram for Fly 2
+        histogram(fly2Last_10min, 'BinEdges', binEdges, 'FaceColor', 'r', 'FaceAlpha', 0.5);  
+
+        % Calculate and plot Means
+        meanFly1 = mean(fly1Last_10min);
+        meanFly2 = mean(fly2Last_10min);
+
+        % Plot the mean lines
+        plot([meanFly1, meanFly1], ylim, 'b--', 'LineWidth', 2);  % Mean for Fly 1 (blue)
+        plot([meanFly2, meanFly2], ylim, 'r--', 'LineWidth', 2);  % Mean for Fly 2 (red)
+
+        % Add labels, title, and legend
+        title(sprintf('Facing Angle Distribution for Fly %d vs Fly %d (Mismatch)', i, i + 1));
+        xlabel('Facing Angle');
+        ylabel('Frequency');
+        legend(sprintf('Fly %d (Mean: %.2f)', i, meanFly1), sprintf('Fly %d (Mean: %.2f)', i + 1, meanFly2));
+        hold off;
+
+        % Plot the lunge raster for the mismatched pair
+        subplot(3, 1, 2);  % Middle subplot for lunge raster
+        rasterplotter(flymatAll(i:i+1), 'lunge', '');  % Use the rasterplotter function
+        title(sprintf('Lunge Raster for Fly %d vs Fly %d (Mismatch)', i, i + 1));
+
+        % Add the text with details below the raster plot
+        subplot(3, 1, 3);  % Bottom subplot for information
+        axis off;  % Turn off axis
+
+        % Create the text content for display
+        infoText = sprintf(['Facing Angle Classification: Fly %d: %s, Fly %d: %s\n', ...
+                    'Mean Facing Angles: Fly %d: %.2f, Fly %d: %.2f\n', ...
+                    'Lunge-Based Dominance: %s\n', ...
+                    'Total Lunges: Fly %d: %d, Fly %d: %d'], ...
+                    i, facingAngleClass1, i + 1, facingAngleClass2, ...
+                    i, meanFly1, i + 1, meanFly2, ...
+                    lungeClass, ...
+                    i, totalLunges1, i + 1, totalLunges2);
+
+        % Display the text information in the figure
+        text(0.5, 0.5, infoText, 'Units', 'normalized', 'HorizontalAlignment', 'center', 'FontSize', 10);
 
     end
 end
@@ -195,9 +197,11 @@ for i = 1:2:numFlies
             if submissiveLunges < 10
                 newDominanceClassification(i) = FA_Fly1;
                 newDominanceClassification(i + 1) = FA_Fly2;
+                PairClassification(pairIndex) = FA_Fly1;
             else
                 newDominanceClassification(i) = lunge_Fly1;
                 newDominanceClassification(i + 1) = lunge_Fly2;
+                PairClassification(pairIndex) = lunge_Fly1;
             end
         end
 
@@ -210,7 +214,7 @@ for i = 1:2:numFlies
 end
 
 % Output the new dominance classification for each fly
-disp('New Dominance Classification based on Total Lunges After 162000 or Facing Angle:');
+disp('Final Dominance Classification from Lunge and Facing-Angle Integration:');
 disp(newDominanceClassification);
 
 
@@ -223,21 +227,20 @@ for i = 1:2:numFlies
     % Check if the pair is classified as "Unclear"
     if strcmp(PairClassification(pairIndex), 'Unclear')
         
-        % Extract facing angle and lunge data for 
-        fly1FacingAngletimeWindow = [];
-        fly2FacingAngletimeWindow = [];
-        fly1LungestimeWindow = [];
-        fly2LungestimeWindow = [];
 
-        % Combine data 
-        for j = 1:size(timeWindow, 1)
-            fly1FacingAngletimeWindow = [fly1FacingAngletimeWindow, FlyFeatures.FacingAngle(i, timeWindow(j, 1):timeWindow(j, 2))];
-            fly2FacingAngletimeWindow = [fly2FacingAngletimeWindow, FlyFeatures.FacingAngle(i + 1, timeWindow(j, 1):timeWindow(j, 2))];
-            fly1LungestimeWindow = [fly1LungestimeWindow, flymatAll(i).L_startsm(flymatAll(i).L_startsm >= timeWindow(j, 1) & flymatAll(i).L_startsm <= timeWindow(j, 2))];
-            fly2LungestimeWindow = [fly2LungestimeWindow, flymatAll(i + 1).L_startsm(flymatAll(i + 1).L_startsm >= timeWindow(j, 1) & flymatAll(i + 1).L_startsm <= timeWindow(j, 2))];
-        end
+    % Extract facing angles and lunges within the dominance window
+    fly1FacingAngletimeWindow = FlyFeatures.FacingAngle(i, timeWindow(1):timeWindow(2));
+    fly2FacingAngletimeWindow = FlyFeatures.FacingAngle(i+1, timeWindow(1):timeWindow(2));
+    
+    fly1LungestimeWindow = flymatAll(i).L_startsm( ...
+        flymatAll(i).L_startsm >= timeWindow(1) & ...
+        flymatAll(i).L_startsm <= timeWindow(2));
+    
+    fly2LungestimeWindow = flymatAll(i+1).L_startsm( ...
+        flymatAll(i+1).L_startsm >= timeWindow(1) & ...
+        flymatAll(i+1).L_startsm <= timeWindow(2));
 
-        % Calculate medians for facing angles
+        % Calculate Means for facing angles
         meanFly1FacingAngle = mean(fly1FacingAngletimeWindow);
         meanFly2FacingAngle = mean(fly2FacingAngletimeWindow);
 
@@ -260,8 +263,8 @@ for i = 1:2:numFlies
         histogram(fly2FacingAngletimeWindow, 'BinEdges', 0:0.1:pi, 'FaceColor', 'r', 'FaceAlpha', 0.5);
 
         % Plot mean lines for facing angles
-        plot([meanFly1FacingAngle, meanFly1FacingAngle], ylim, 'b--', 'LineWidth', 2);  % Median for Fly 1
-        plot([meanFly2FacingAngle, meanFly2FacingAngle], ylim, 'r--', 'LineWidth', 2);  % Median for Fly 2
+        plot([meanFly1FacingAngle, meanFly1FacingAngle], ylim, 'b--', 'LineWidth', 2);  % Mean for Fly 1
+        plot([meanFly2FacingAngle, meanFly2FacingAngle], ylim, 'r--', 'LineWidth', 2);  % Mean for Fly 2
 
         % Add labels, title, and legend
         title(sprintf('Facing Angle Distribution for Fly %d vs Fly %d', i, i + 1));

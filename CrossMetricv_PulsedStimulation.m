@@ -1,7 +1,11 @@
 %% --- Cross-Metric Comparison (Facing Angles vs Lunge-Based Dominance) ---
 % This compares facing angle and Lunge classifications and assigns an
-% updated classification based on their integration.
+% updated classification based on their integration. 
 
+% Mismatched classifications from facing-angle and lunging classifiers are
+% plotted. These should be manually inspected for final dominance call. 
+
+% Donovan Ventimiglia Oct 2026
 
 % Initialize a variable to track mismatches between the two analyses
 pairComparison = strings(numPairs, 1);  % Will store if the classifications agree or not
@@ -96,13 +100,13 @@ for i = 1:2:numFlies
         % Histogram for Fly 2
         histogram(fly2LastTwoPulseData, 'BinEdges', binEdges, 'FaceColor', 'r', 'FaceAlpha', 0.5);  
         
-        % Calculate and plot medians
+        % Calculate and plot means
         meanFly1 = mean(fly1LastTwoPulseData);
         meanFly2 = mean(fly2LastTwoPulseData);
         
         % Plot the mean lines
-        plot([meanFly1, meanFly1], ylim, 'b--', 'LineWidth', 2);  % Median for Fly 1 (blue)
-        plot([meanFly2, meanFly2], ylim, 'r--', 'LineWidth', 2);  % Median for Fly 2 (red)
+        plot([meanFly1, meanFly1], ylim, 'b--', 'LineWidth', 2);  % mean for Fly 1 (blue)
+        plot([meanFly2, meanFly2], ylim, 'r--', 'LineWidth', 2);  % mean for Fly 2 (red)
         
         % Add labels, title, and legend
         title(sprintf('Facing Angle Distribution for Fly %d vs Fly %d (Mismatch - Last Two Pulses)', i, i + 1));
@@ -201,43 +205,53 @@ for i = 1:2:numFlies
         newDominanceClassification(i + 1) = lunge_Fly2;
         PairClassification(pairIndex) = lunge_Fly1;
 
-    % if FA calls No Dominance, but Lunges call dominance, check the number of lunges in the low lunger -- if < 10 total (last two stims) use FA call; otherwise use Lunge Call.     
+    % If FA calls No Dominance, but Lunges call dominance, check the number of lunges in the high lunger.
+    % If < 10 total across the last two stims, use FA call; otherwise use Lunge call. 
     elseif strcmp(FA_Fly1, 'No Dominance') && ~strcmp(lunge_Fly1, 'Low Lunges')
         
+        % Default to FA call
         newDominanceClassification(i) = FA_Fly1;
         newDominanceClassification(i + 1) = FA_Fly2;
         PairClassification(pairIndex) = FA_Fly1;
-
-        if strcmp(lunge_Fly1, 'Submissive')
-            submissiveIndex = i;
-        elseif strcmp(lunge_Fly2, 'Submissive')
-            submissiveIndex = i + 1;
+    
+        % Identify high lunger / lunge-classified dominant fly
+        if strcmp(lunge_Fly1, 'Dominant')
+            highLungerIndex = i;
+        elseif strcmp(lunge_Fly2, 'Dominant')
+            highLungerIndex = i + 1;
         else
-            submissiveIndex = [];
+            highLungerIndex = [];
         end
-
-        if ~isempty(submissiveIndex)
-            submissiveLunges = sum(LungeAnalysis(submissiveIndex).LungesPerPulse(lastTwoPulses));
-
-            if submissiveLunges < 10
+    
+        % Check high-lunger activity across the last two pulses
+        if ~isempty(highLungerIndex)
+            highLungerLunges = sum( ...
+                LungeAnalysis(highLungerIndex).LungesPerPulse(lastTwoPulses));
+    
+            if highLungerLunges < 10
+                % Too few lunges: use Facing Angle call
                 newDominanceClassification(i) = FA_Fly1;
                 newDominanceClassification(i + 1) = FA_Fly2;
+                PairClassification(pairIndex) = FA_Fly1;
+    
             else
+                % At least 10 lunges: retain Lunge call
                 newDominanceClassification(i) = lunge_Fly1;
                 newDominanceClassification(i + 1) = lunge_Fly2;
+                PairClassification(pairIndex) = lunge_Fly1;
             end
         end
-
+    
     else
         % Fallback to lunge-based classification if no other conditions are met
         newDominanceClassification(i) = lunge_Fly1;
         newDominanceClassification(i + 1) = lunge_Fly2;
         PairClassification(pairIndex) = lunge_Fly1;
     end
-end
+    end
 
 % Output the new dominance classification for each fly
-disp('New Dominance Classification based on Total Lunges After 162000 or Facing Angle:');
+disp('Final Dominance Classification from Lunge and Facing-Angle Integration:');
 disp(newDominanceClassification);
 
 
@@ -267,7 +281,7 @@ for i = 1:2:numFlies
             fly2LungesLastTwoPulses = [fly2LungesLastTwoPulses, flymatAll(i + 1).L_startsm(flymatAll(i + 1).L_startsm >= lastTwoPulses(j, 1) & flymatAll(i + 1).L_startsm <= lastTwoPulses(j, 2))];
         end
 
-        % Calculate medians for facing angles
+        % Calculate Means for facing angles
         meanFly1FacingAngle = mean(fly1FacingAngleLastTwoPulses);
         meanFly2FacingAngle = mean(fly2FacingAngleLastTwoPulses);
 
@@ -290,8 +304,8 @@ for i = 1:2:numFlies
         histogram(fly2FacingAngleLastTwoPulses, 'BinEdges', 0:0.1:pi, 'FaceColor', 'r', 'FaceAlpha', 0.5);
 
         % Plot mean lines for facing angles
-        plot([meanFly1FacingAngle, meanFly1FacingAngle], ylim, 'b--', 'LineWidth', 2);  % Median for Fly 1
-        plot([meanFly2FacingAngle, meanFly2FacingAngle], ylim, 'r--', 'LineWidth', 2);  % Median for Fly 2
+        plot([meanFly1FacingAngle, meanFly1FacingAngle], ylim, 'b--', 'LineWidth', 2);  % Mean for Fly 1
+        plot([meanFly2FacingAngle, meanFly2FacingAngle], ylim, 'r--', 'LineWidth', 2);  % Mean for Fly 2
 
         % Add labels, title, and legend
         title(sprintf('Facing Angle Distribution for Fly %d vs Fly %d (Last Two Pulses)', i, i + 1));

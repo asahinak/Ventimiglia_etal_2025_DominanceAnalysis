@@ -1,17 +1,20 @@
-%% --- Temporal Analysis of Dominance Based on Lunges with Pair Index ---
-% This section performs a pairwise temporal analysis of dominance based on lunging behavior.
-% It identifies the fly in each pair with the fewer lunges (low_lunger) and sums the number 
-% of lunges during specific time windows (stimulation periods).
-%
-% Classification criteria:
-% 1. The low-lunger must have lunged fewer than 5 times in either of the last two pulses.
-% 2. The high-lunger (the other fly) must have lunged at least 1.5 times the number of lunges 
-%    done by the low-lunger across the last two pulses.
-%
-% If both conditions are met, the pair is classified as "Dominance Established."
-% If these conditions are not met, the pair is classified as "No Dominance."
+%% --- Dominance Classification based on Lunging behavior
+
+% Run this after FacingAngle Dominance Analysis.
 
 % FlymatAll and FlyFeatures should already be in the workspace
+
+% This section performs a pairwise  analysis of dominance based on lunging behavior.
+%
+% Classification criteria:
+% 1. The low-lunger must have lunged <=5 times in each of the last two pulses.
+% 2. Across the last two pulses, the high-lunger must have at least
+%    1.5 times the low-lunger's total lunge count.
+% If both conditions are met, the pair is classified as "Dominance Established."
+
+% "No Fighting": both flies have zero lunges across the last two pulses.
+% "Low Lunges": unless "No Fighting" applies, the high-lunger has <5
+% lunges in each of the last two pulses.
 
 % Ensure the number of flies is determined from the flymatAll structure
 numFlies = length(flymatAll); % Assuming each element corresponds to one fly
@@ -37,7 +40,8 @@ for i = 1:2:numFlies
         break; % Skip unpaired fly if odd number of flies
     end
     
-    % Define the start of the time window for lunges after time 162000
+    % Define the threshold used to select the low-lunger; counts include
+    % after frame 162000.
     timeThreshold = 162000;
 
     % Determine which fly in the pair lunged fewer times (low_lunger) after time 162000
@@ -87,14 +91,15 @@ for i = 1:2:numFlies
     lowLungerLastTwoPulses = LungeAnalysis(lowLungerIndex).LungesPerPulse(end-1:end);  % Lunges in the last two pulses for low lunger
     highLungerLastTwoPulses = LungeAnalysis(highLungerIndex).LungesPerPulse(end-1:end);  % Lunges in the last two pulses for high lunger
     
-    % Check if both flies didn't lunge in the last two pulses (flag as "No Fighting")
+    % If neither fly lunged in either of the last two pulses, flag as "No Fighting."
     if sum(lowLungerLastTwoPulses) == 0 && sum(highLungerLastTwoPulses) == 0
         LungeAnalysis(lowLungerIndex).DominanceClassification = 'No Fighting';
         LungeAnalysis(highLungerIndex).DominanceClassification = 'No Fighting';
         LungeAnalysis(lowLungerIndex).PairClassification = 'No Fighting';
         LungeAnalysis(highLungerIndex).PairClassification = 'No Fighting';
     
-    % Mark as "Low Lunges" if lunge activity is very low for the high lunger
+    % If the high-lunger had <5 lunges in each of the last two pulses,
+    % classify the pair as "Low Lunges."
     elseif all(highLungerLastTwoPulses < 5)
         LungeAnalysis(lowLungerIndex).DominanceClassification = 'Low Lunges';
         LungeAnalysis(highLungerIndex).DominanceClassification = 'Low Lunges';
@@ -202,8 +207,8 @@ else
         numTimeBins = min(numTimeBins, size(dominantLungeRates{1}, 2));
     end
 
-    % Redefine the time vector based on the actual number of bins (already in minutes)
-    timeVector = (1:numTimeBins);  % Adjust this based on your actual bin length to minutes if needed
+    % Define the time vector as bin indices; convert to minutes if needed.
+    timeVector = (1:numTimeBins); 
 
     % Prepare cell arrays for group names and colors
     groupNames = {};

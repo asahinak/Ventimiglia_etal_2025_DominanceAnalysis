@@ -1,6 +1,8 @@
 % Dominance classification based on Facing Angle data
-% 1-hour Constant Stimulation protocol.
 % Donovan Ventimiglia. October 8th, 2025
+
+% 1-hour constant-stimulation protocol (75-min recording;
+% stimulation from recording minute 5 to minute 65).
 
 % Note:
 % FeatureCollection should have been run before this script.
@@ -26,10 +28,10 @@ rowsPerFigure = 2;  % Two rows: one for histograms, one for raster plot
 figureCounter = 1;  % Figure number counter
 binEdges = 0:0.1:pi;  % Bin edges for histogram
 
-% Define analysis periods
-First_5min = [1, 18000]; % 1st five min
-TP_30min = [108000, 144000];  %  30min; 10min data after 30min of recording.
-DomPeriod = [198000,234000]; % period for dominance determination, last 10min of stimulation.
+% Define analysis periods (60 fps; recording is 75 min)
+First_5min = [1, 18000];          % Prestimulation period: recording minutes 0–5
+TP_30min = [108000, 144000];     % Recording minutes 30–40
+DomPeriod = [198000, 234000];    % Final 10 min of stimulation: recording minutes 55–65
 
 %% --- Prompt user to save figures or not ---
 saveFigures = questdlg('Would you like to save the figures?', ...
@@ -109,19 +111,19 @@ for i = 1:2:numFlies
     hold off;
 
     % --- Classification window Analysis ---
-    fly1LastDomWindow = [];
-    fly2LastDomWinow = [];
+    fly1DomWindow = [];
+    fly2DomWinow = [];
     for j = 1:size(DomPeriod, 1)
-        fly1LastDomWindow = [fly1LastDomWindow, fly1(DomPeriod(j, 1):DomPeriod(j, 2))];
-        fly2LastDomWinow = [fly2LastDomWinow, fly2(DomPeriod(j, 1):DomPeriod(j, 2))];
+        fly1DomWindow = [fly1DomWindow, fly1(DomPeriod(j, 1):DomPeriod(j, 2))];
+        fly2DomWinow = [fly2DomWinow, fly2(DomPeriod(j, 1):DomPeriod(j, 2))];
     end
-    meanFly1_DomWindow = mean(fly1LastDomWindow);
-    meanFly2_DomWindow = mean(fly2LastDomWinow);
+    meanFly1_DomWindow = mean(fly1DomWindow);
+    meanFly2_DomWindow = mean(fly2DomWinow);
 
     subplot(rowsPerFigure, plotsPerRow, 3);
     hold on;
-    histogram(fly1LastDomWindow, 'BinEdges', binEdges, 'FaceColor', 'b', 'FaceAlpha', 0.5);
-    histogram(fly2LastDomWinow, 'BinEdges', binEdges, 'FaceColor', 'r', 'FaceAlpha', 0.5);
+    histogram(fly1DomWindow, 'BinEdges', binEdges, 'FaceColor', 'b', 'FaceAlpha', 0.5);
+    histogram(fly2DomWinow, 'BinEdges', binEdges, 'FaceColor', 'r', 'FaceAlpha', 0.5);
     plot([meanFly1_DomWindow meanFly1_DomWindow], ylim, 'b--', 'LineWidth', 2);
     plot([meanFly2_DomWindow meanFly2_DomWindow], ylim, 'r--', 'LineWidth', 2);
     title(sprintf('Fly %d vs Fly %d (Dom Window)', i, i+1));
@@ -174,12 +176,14 @@ end
 % window. It analyzes each fly's behavior to determine if it was primarily facing, fleeing, 
 % or uncertain during this period.
 
-% Define the left, right, and center ranges for facing, fleeing, and unclear
+% Define the facing and fleeing ranges used for classification.
+% The center range is shown for reference but is not used by the classifier.
+
 facingRange = [0, 0.75];     % Fly is facing opponent
 fleeingRange = [2.4, 3.15];  % Fly is fleeing opponent
 centerRange = [1.2, 1.8];    % Center region for unclear behavior
 
-% Define the 15% threshold for "unclear" classification
+% Define the 15% threshold comparing facing- and fleeing-range histogram sums
 thresholdFactor = 0.15;
 meanThreshold = 1.5; % Adjust as needed for mean threshold
 
@@ -192,18 +196,18 @@ for i = 1:2:numFlies
     end
     
     % Extract the data from dominance test window for both flies in the pair
-    fly1LastDomWindow = [];
-    fly2LastDomWinow = [];
+    fly1DomWindow = [];
+    fly2DomWinow = [];
     
     % Combine the data
     for j = 1:size(DomPeriod, 1)
-        fly1LastDomWindow = [fly1LastDomWindow, FlyFeatures.FacingAngle(i, DomPeriod(j, 1):DomPeriod(j, 2))];
-        fly2LastDomWinow = [fly2LastDomWinow, FlyFeatures.FacingAngle(i + 1, DomPeriod(j, 1):DomPeriod(j, 2))];
+        fly1DomWindow = [fly1DomWindow, FlyFeatures.FacingAngle(i, DomPeriod(j, 1):DomPeriod(j, 2))];
+        fly2DomWinow = [fly2DomWinow, FlyFeatures.FacingAngle(i + 1, DomPeriod(j, 1):DomPeriod(j, 2))];
     end
     
     % Generate histograms and get the frequencies in each bin
-    [fly1Freq, binEdges] = histcounts(fly1LastDomWindow, 'BinEdges', 0:0.1:pi);
-    [fly2Freq, ~] = histcounts(fly2LastDomWinow, 'BinEdges', 0:0.1:pi);
+    [fly1Freq, binEdges] = histcounts(fly1DomWindow, 'BinEdges', 0:0.1:pi);
+    [fly2Freq, ~] = histcounts(fly2DomWinow, 'BinEdges', 0:0.1:pi);
     
     % Find the bins corresponding to the left, center, and right ranges
     validBinEdges = binEdges(1:end-1);  % Use only the first N-1 edges for indexing bins
@@ -223,8 +227,8 @@ for i = 1:2:numFlies
     fly2RightSum = sum(maxk(fly2RightBins, 3));  % Sum of the largest 3 bins on the right
 
     % Compute the medians of facing angle distributions
-    meanFly1 = mean(fly1LastDomWindow);
-    meanFly2 = mean(fly2LastDomWinow);
+    meanFly1 = mean(fly1DomWindow);
+    meanFly2 = mean(fly2DomWinow);
 
     % Classification based on histogram sums and median
     if (fly1LeftSum > fly1RightSum * (1 + thresholdFactor)) && ...
@@ -309,7 +313,7 @@ disp(dominanceVector_FA);
 % 2. **Cohen's d (Effect Size)**: Measures the magnitude of the difference between the two flies'
 %    mean facing angles. A larger Cohen's d value suggests a stronger difference.
 %
-% 3. **Percentile Shift Comparison**: Compares the medians of the facing angle distributions to 
+% 3. **Median Comparison**: Compares the medians of the facing angle distributions to 
 %    assess directional dominance or submission.
 %
 % Based on the `dominanceVector_FA` classification, the facing angles for each category 
@@ -322,7 +326,7 @@ disp(dominanceVector_FA);
 dominantFacingAngles = [];
 submissiveFacingAngles = [];
 noDominanceFacingAngles = [];  
-unclearDominacneFacingAngles= []; 
+unclearDominanceFacingAngles= []; 
 
 % Loop through pairs of flies (1&2, 3&4, etc.)
 for i = 1:2:numFlies
@@ -356,7 +360,7 @@ for i = 1:2:numFlies
 
     % 3. Percentile shift comparison (e.g., using the median)
     medianFly1 = median(fly1_DomWindow);
-    meanFly2 = median(fly2_DomWindow);
+    medianFly2 = median(fly2_DomWindow);
 
     % Now store the facing angles for each category based on the existing classification
     if strcmp(dominanceVector_FA(i), 'Dominant') && strcmp(dominanceVector_FA(i+1), 'Submissive')
@@ -371,8 +375,8 @@ for i = 1:2:numFlies
         % Both flies are in the no dominance category
         noDominanceFacingAngles = [noDominanceFacingAngles, fly1_DomWindow, fly2_DomWindow];
     elseif strcmp(dominanceVector_FA(i), 'Unclear') 
-        % Both flies are in the no dominance category
-        unclearDominacneFacingAngles = [noDominanceFacingAngles, fly1_DomWindow, fly2_DomWindow];    
+        % Store both flies' facing angles for the Unclear category.
+        unclearDominanceFacingAngles = [unclearDominanceFacingAngles, fly1_DomWindow, fly2_DomWindow];    
 
     end
 
@@ -393,8 +397,9 @@ fprintf('No Dominance Facing Angles: %d values collected.\n', length(noDominance
 %% Plot and Save Facing Angles Distributions for Each Category --
 
 % Define categories and the corresponding data
-categories = {'Dominant', 'Submissive', 'No Dominance'};
-facingAnglesData = {dominantFacingAngles, submissiveFacingAngles, noDominanceFacingAngles};
+categories = {'Dominant', 'Submissive', 'No Dominance', 'Unclear'};
+facingAnglesData = {dominantFacingAngles, submissiveFacingAngles, ...
+                    noDominanceFacingAngles, unclearDominanceFacingAngles};
 
 % Initialize an array to store the figure handles
 figureHandles = [];
