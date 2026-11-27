@@ -5,12 +5,14 @@ These MATLAB scripts classify pairwise dominance behavior from FlymatAll and Fly
 1.	Facing-angle analysis
 2.	Lunge analysis
 3.	Cross-metric classifier that integrates the facing-angle and lunge classifications
-4.	
+   
 The scripts provide a reproducible framework to assist with classification; they are not intended to replace experimenter review. Disagreements between classifiers are flagged for inspection, and may require a final manual adjustment when the selected classification window does not represent the broader behavior of the pair.
 Requirements and inputs:
+
 •	MATLAB 2024 or newer
 •	Corrected fly identities in paired sequential order (pair ={a,b} ordered linearly in FlymatAll as {1,2}, {3,4}…).
 •	FlymatAll and FlyFeatures variables created from FlyTracker and JAABA lunge classification outputs.
+
 Use the scripts corresponding to the experimental condition being analyzed. Before running them, check that the input files, recording frame rate, and analysis-window settings match that experiment. 
 FlymatAll structure should contain:  {'movie’}, {‘fly' }, {'fps’}, {‘L_start’}, {‘L_end’},{‘L_startsm’}, {'L_endsm'}, {'L_binary’}, {'L_bouts’}, {‘L_dur’}, {‘L_binbouts' }, {‘L_bindur'}
 FlyFeatures structure should contain: {'FacingAngle’}, {‘velocity'}, {‘Dist2Wall'}
