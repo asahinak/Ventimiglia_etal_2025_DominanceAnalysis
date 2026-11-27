@@ -10,9 +10,7 @@ The scripts provide a reproducible framework to assist with classification; they
 Requirements and inputs:
 
 •	MATLAB 2024 or newer
-
 •	Corrected fly identities in paired sequential order (pair ={a,b} ordered linearly in FlymatAll as {1,2}, {3,4}…).
-
 •	FlymatAll and FlyFeatures variables created from FlyTracker and JAABA lunge classification outputs.
 
 Use the scripts corresponding to the experimental condition being analyzed. Before running them, check that the input files, recording frame rate, and analysis-window settings match that experiment. 
